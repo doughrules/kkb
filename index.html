@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KKB — Bill Splitter</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Fraunces:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    :root{
+      --bg:#f0f4f8;--bg2:#e8eef5;--surface:#ffffff;--border:#d4dde8;--border2:#c2cfde;
+      --ink:#0d1f33;--ink2:#4a6080;--muted:#8aa0b8;
+      --accent:#1a4f8a;--accent2:#2260a8;--accent-bg:#eaf0f8;--accent-border:#b8cfe8;
+      --green:#1e7a48;--green-bg:#eaf6f0;--green-border:#a8d8c0;
+      --blue:#1a4f8a;--blue-bg:#eaf0f8;
+      --red:#8a2020;--red-bg:#f8eaea;
+      --sh:0 2px 12px rgba(20,60,100,.08);--sh-lg:0 8px 32px rgba(20,60,100,.14);
+      --r:12px;--rsm:8px;--rlg:20px;
+    }
+    body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--ink);}
+    .app{min-height:100vh;display:flex;flex-direction:column;}
+    .topbar{background:var(--surface);border-bottom:2px solid var(--border);height:68px;padding:0 20px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:100;box-shadow:var(--sh);}
+    .logo{font-family:'Bebas Neue',sans-serif;font-size:42px;color:var(--accent);flex:1;letter-spacing:4px;line-height:1;}
+    .logo span{color:var(--ink2);font-size:11px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;letter-spacing:2px;text-transform:uppercase;display:block;line-height:1;margin-top:1px;opacity:.7;}
+    .user-chip{display:flex;align-items:center;gap:8px;padding:5px 12px 5px 5px;background:var(--bg);border:1.5px solid var(--border);border-radius:30px;cursor:pointer;transition:border-color .15s;font-size:13px;font-weight:600;color:var(--ink);}
+    .user-chip:hover{border-color:var(--accent);}
+    .av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;}
+    .page{max-width:760px;margin:0 auto;padding:24px 14px 80px;width:100%;}
+    .card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--rlg);box-shadow:var(--sh);overflow:hidden;margin-bottom:18px;}
+    .card-hd{padding:14px 18px;border-bottom:1.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:linear-gradient(to right,var(--bg2),var(--surface));}
+    .card-title{font-family:'Fraunces',serif;font-size:16px;color:var(--ink);display:flex;align-items:center;gap:7px;}
+    .card-body{padding:18px;}
+    .field{display:flex;flex-direction:column;gap:5px;}
+    .lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:var(--muted);}
+    .inp{background:var(--bg);border:1.5px solid var(--border2);border-radius:var(--rsm);color:var(--ink);font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;padding:10px 12px;outline:none;transition:border-color .15s,box-shadow .15s;width:100%;}
+    .inp:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(26,79,138,.12);}
+    .inp::placeholder{color:var(--muted);}
+    .irow{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;}
+    .btn{padding:9px 16px;border-radius:var(--rsm);border:none;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;transition:all .15s;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;}
+    .btn-p{background:var(--accent);color:#fff;}
+    .btn-p:hover{background:var(--accent2);transform:translateY(-1px);box-shadow:0 4px 14px rgba(26,79,138,.3);}
+    .btn-o{background:var(--surface);color:var(--ink2);border:1.5px solid var(--border2);}
+    .btn-o:hover{border-color:var(--accent);color:var(--accent);}
+    .btn-g{background:transparent;color:var(--muted);border:none;padding:5px 9px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;}
+    .btn-g:hover{color:var(--red);}
+    .btn-grn{background:var(--green);color:#fff;font-weight:800;border:none;}
+    .btn-grn:hover{background:#1da34a;}
+    .btn-sm{padding:6px 11px;font-size:12px;}
+    .btn-full{width:100%;justify-content:center;padding:13px;font-size:14px;border-radius:var(--r);}
+    .seg{display:flex;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--rsm);overflow:hidden;}
+    .seg-o{flex:1;padding:7px 4px;text-align:center;font-size:12px;font-weight:700;cursor:pointer;color:var(--muted);transition:all .15s;}
+    .seg-o.on{background:var(--accent);color:#fff;}
+    .pill{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;user-select:none;}
+    .pill-sc{background:var(--green-bg);color:var(--green);border:1.5px solid var(--green-border);}
+    .pill-sc.on{background:var(--green);color:#fff;border-color:var(--green);}
+    .pill-reg{background:var(--bg);color:var(--muted);border:1.5px solid var(--border2);}
+    .chip{padding:5px 11px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border2);background:var(--bg);color:var(--ink2);transition:all .15s;}
+    .chip.on{background:var(--accent-bg);color:var(--accent);border-color:var(--accent);}
+    .chip-dashed{border-style:dashed;}
+    .prow{display:flex;align-items:center;gap:10px;padding:10px 13px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--rsm);margin-bottom:8px;}
+    .iblock{border-bottom:1.5px solid var(--border);padding:13px 0;}
+    .iblock:last-child{border-bottom:none;}
+    .scard{background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:12px;}
+    .scard.sc{border-color:var(--green-border);background:var(--green-bg);}
+    .sname{font-family:'Fraunces',serif;font-size:18px;display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+    .sline{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:3px 0;color:var(--ink2);}
+    .sline.total{border-top:2px solid var(--border2);margin-top:8px;padding-top:10px;font-size:16px;color:var(--ink);font-weight:700;}
+    .sline.disc{color:var(--green);font-weight:600;}
+    .mono{font-family:'JetBrains Mono',monospace;}
+    .cbox{background:#fafaf8;border:1.5px solid var(--border);border-radius:var(--rsm);padding:11px 13px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink2);line-height:2;margin-top:8px;white-space:pre-wrap;}
+    .cs{color:var(--blue);}
+    .cr{color:var(--accent);font-weight:600;}
+    .share-row{display:flex;gap:7px;margin-top:12px;flex-wrap:wrap;}
+    .tbar{background:linear-gradient(135deg,var(--accent) 0%,var(--accent2) 100%);border-radius:var(--rlg);padding:20px 24px;color:#fff;display:flex;justify-content:space-between;align-items:center;box-shadow:0 8px 24px rgba(26,79,138,.28);margin-bottom:16px;}
+    .tbar-lbl{font-size:11px;opacity:.8;text-transform:uppercase;letter-spacing:.8px;}
+    .tbar-amt{font-family:'Bebas Neue',sans-serif;font-size:52px;letter-spacing:2px;line-height:1;}
+    .tbar-sub{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:1px;}
+    .tabs{display:flex;gap:3px;background:var(--bg);border-radius:var(--rsm);padding:3px;}
+    .tab{padding:6px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;color:var(--muted);border:none;background:transparent;font-family:'Plus Jakarta Sans',sans-serif;transition:all .15s;}
+    .tab.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.08);}
+    .receipt{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--rlg);overflow:hidden;margin-bottom:14px;cursor:pointer;transition:box-shadow .2s,transform .15s;}
+    .receipt:hover{box-shadow:var(--sh-lg);transform:translateY(-2px);}
+    .rct-top{padding:14px 18px;background:linear-gradient(to right,#eef4fc,#fff);border-bottom:1.5px dashed var(--border2);}
+    .rct-rest{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--ink);letter-spacing:1.5px;}
+    .rct-date{font-size:12px;color:var(--muted);margin-top:2px;}
+    .rct-body{padding:12px 18px;}
+    .rct-foot{padding:10px 18px;background:var(--accent-bg);display:flex;justify-content:space-between;align-items:center;border-top:1.5px solid var(--accent-border);}
+    .rct-total{font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--accent);letter-spacing:1px;}
+    .auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#ddeaf8 0%,#f0f4f8 50%,#e8f0f8 100%);padding:20px;}
+    .auth-card{background:var(--surface);border:2px solid var(--border);border-radius:24px;padding:36px 32px;max-width:390px;width:100%;box-shadow:var(--sh-lg);}
+    .auth-logo{font-family:'Bebas Neue',sans-serif;font-size:96px;color:var(--accent);text-align:center;letter-spacing:8px;line-height:.9;margin-bottom:4px;}
+    .auth-logo-sub{font-size:11px;font-weight:700;text-align:center;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-bottom:4px;}
+    .auth-sub{text-align:center;color:var(--muted);font-size:12px;margin-bottom:24px;}
+    .err{background:var(--red-bg);color:var(--red);border-radius:var(--rsm);padding:8px 12px;font-size:13px;margin-bottom:12px;border:1px solid #e0b0b0;}
+    .ac-wrap{position:relative;}
+    .ac-list{position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1.5px solid var(--border2);border-radius:var(--rsm);z-index:50;max-height:170px;overflow-y:auto;box-shadow:var(--sh);margin-top:2px;}
+    .ac-item{padding:9px 12px;font-size:13px;cursor:pointer;color:var(--ink2);transition:background .1s;}
+    .ac-item:hover{background:var(--accent-bg);color:var(--accent);}
+    .modal-bg{position:fixed;inset:0;background:rgba(10,30,60,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);}
+    .modal{background:var(--surface);border-radius:var(--rlg);padding:26px;max-width:460px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.2);border:1.5px solid var(--border);}
+    .modal-title{font-family:'Fraunces',serif;font-size:21px;margin-bottom:3px;color:var(--ink);}
+    .modal-sub{font-size:13px;color:var(--muted);margin-bottom:18px;}
+    .badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:700;}
+    .badge-sc{background:var(--green-bg);color:var(--green);border:1.5px solid var(--green-border);}
+    .bnav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:2px solid var(--border);display:flex;z-index:99;}
+    .bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 6px;cursor:pointer;color:var(--muted);font-size:11px;font-weight:700;border:none;background:transparent;font-family:'Plus Jakarta Sans',sans-serif;transition:color .15s;}
+    .bnav-item.on{color:var(--accent);}
+    .bni{font-size:20px;line-height:1.2;}
+    .empty{text-align:center;padding:40px 20px;color:var(--muted);}
+    .empty-ico{font-size:44px;margin-bottom:10px;}
+    .empty-ttl{font-family:'Fraunces',serif;font-size:19px;color:var(--ink2);margin-bottom:6px;}
+    hr.div{border:none;border-top:1.5px solid var(--border);margin:14px 0;}
+    input[type=range]{accent-color:var(--accent);width:100%;}
+    input[type=checkbox]{accent-color:var(--accent);}
+    .spin{display:inline-block;width:16px;height:16px;border:2.5px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
+    .spin-dark{border-color:var(--border2);border-top-color:var(--accent);}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .loading-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);}
+    .loading-logo{font-family:'Bebas Neue',sans-serif;font-size:64px;color:var(--accent);letter-spacing:6px;text-align:center;margin-bottom:20px;}
+    .fade{animation:fd .28s ease;}
+    @keyframes fd{from{opacity:0;transform:translateY(7px);}to{opacity:1;transform:translateY(0);}}
+    a{text-decoration:none;}
+    @media(max-width:500px){
+      .tbar{flex-direction:column;gap:8px;text-align:center;}
+      .card-body{padding:13px;}
+      .auth-card{padding:24px 16px;}
+      .irow{flex-direction:column;}
+      .auth-logo{font-size:72px;}
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script type="text/babel">
+    const { useState, useMemo, useEffect } = React;
+
+    // ── Supabase client ───────────────────────────────────────────────────────
+    const sb = supabase.createClient(
+      "https://flasezkvrmhkerhxhwcd.supabase.co",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZsYXNlemt2cm1oa2VyaHhod2NkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjA0NzcsImV4cCI6MjA4ODc5NjQ3N30.mUa5ls5E0hyJfhMGrDNUeFX46g8DyLO75wiV-dewse0"
+    );
+
+    // ── helpers ───────────────────────────────────────────────────────────────
+    function uid() { return Math.random().toString(36).slice(2,9); }
+    function fmt(n) { return "₱"+(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,","); }
+    function hashPw(s) { let h=0; for(let c of s){h=(h<<5)-h+c.charCodeAt(0)|0;} return String(h); }
+    function today() { return new Date().toLocaleDateString("en-PH",{year:"numeric",month:"long",day:"numeric"}); }
+    const COLORS=["#e05c2e","#2563eb","#16a34a","#c026d3","#7c3aed","#d97706","#0891b2"];
+    const avatarBg=i=>COLORS[i%COLORS.length]+"22";
+    const avatarFg=i=>COLORS[i%COLORS.length];
+    const ini=n=>(n||"?")[0].toUpperCase();
+
+    // Cache session so refresh doesn't log you out
+    const SK="kkb_sess";
+    const saveSession=u=>{try{localStorage.setItem(SK,JSON.stringify(u));}catch{}};
+    const loadSession=()=>{try{return JSON.parse(localStorage.getItem(SK));}catch{return null;}};
+    const clearSession=()=>{try{localStorage.removeItem(SK);}catch{}};
+
+    // ── Supabase DB calls ─────────────────────────────────────────────────────
+    async function dbRegister(username, name, pass) {
+      const id=uid(), ph=hashPw(pass);
+      const {error}=await sb.from("users").insert({id,username,name,password_hash:ph});
+      if (error) {
+        if (error.code==="23505") throw new Error("Username already taken — try another.");
+        throw new Error("Could not create account. Try again.");
+      }
+      await sb.from("user_data").insert({user_id:id,restaurants:[],menu_history:{},bills:[]});
+      return {id,name,username};
+    }
+
+    async function dbLogin(username, pass) {
+      const {data,error}=await sb.from("users").select("id,name,password_hash").eq("username",username).single();
+      if (error||!data) throw new Error("Incorrect username or password.");
+      if (data.password_hash!==hashPw(pass)) throw new Error("Incorrect username or password.");
+      return {id:data.id,name:data.name,username};
+    }
+
+    async function dbLoad(userId) {
+      const {data}=await sb.from("user_data").select("*").eq("user_id",userId).single();
+      if (!data) return {restaurants:[],menuHistory:{},bills:[]};
+      return {restaurants:data.restaurants||[],menuHistory:data.menu_history||{},bills:data.bills||[]};
+    }
+
+    async function dbSave(userId, ud) {
+      await sb.from("user_data").upsert({
+        user_id:userId,
+        restaurants:ud.restaurants||[],
+        menu_history:ud.menuHistory||{},
+        bills:ud.bills||[],
+        updated_at:new Date().toISOString()
+      });
+    }
+
+    // ── computeSummary ────────────────────────────────────────────────────────
+    function computeSummary(persons,items,scMode,scVal,scOnOriginal=true) {
+      const pd=persons.map(person=>{
+        let sub=0,disc_sub=0,bd=[];
+        for (const item of items) {
+          if (!item.sharers.includes(person.id)) continue;
+          const n=item.sharers.length||1, raw=item.price/n;
+          if (person.isSC&&item.vatApplied) {
+            const ve=raw/1.12,d=ve*0.80; sub+=raw; disc_sub+=d;
+            bd.push({name:item.name,raw,ve,disc:d,isSC:true,vat:true});
+          } else if (person.isSC&&!item.vatApplied) {
+            const d=raw*0.80; sub+=raw; disc_sub+=d;
+            bd.push({name:item.name,raw,ve:raw,disc:d,isSC:true,vat:false});
+          } else {
+            sub+=raw; disc_sub+=raw;
+            bd.push({name:item.name,raw,disc:raw,isSC:false});
+          }
+        }
+        return {person,sub,disc_sub,bd};
+      });
+      const totalSub=pd.reduce((s,x)=>s+x.sub,0);
+      const withSC=pd.map(p=>{
+        const scBasis=scOnOriginal?p.sub:p.disc_sub;
+        let sc=0;
+        if (scMode==="percent") sc=scBasis*(scVal/100);
+        else if (scMode==="fixed") {
+          const tb=scOnOriginal?totalSub:pd.reduce((s,x)=>s+x.disc_sub,0);
+          sc=tb>0?(scBasis/tb)*scVal:0;
+        }
+        const grand=p.disc_sub+sc,discount=p.sub-p.disc_sub;
+        return {...p,sc,grand,discount,scBasis,scOnOriginal};
+      });
+      return {
+        persons:withSC,
+        grand:withSC.reduce((s,x)=>s+x.grand,0),
+        totalDiscount:withSC.reduce((s,x)=>s+x.discount,0),
+        totalSC:withSC.reduce((s,x)=>s+x.sc,0),
+      };
+    }
+
+    // ── Loading ───────────────────────────────────────────────────────────────
+    function Loading() {
+      return (
+        <div className="loading-wrap fade">
+          <div>
+            <div className="loading-logo">KKB</div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,color:"var(--muted)",fontSize:14}}>
+              <div className="spin spin-dark"></div> Loading…
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ── Auth ──────────────────────────────────────────────────────────────────
+    function AuthScreen({onLogin}) {
+      const [mode,setMode]=useState("login");
+      const [name,setName]=useState("");
+      const [user,setUser]=useState("");
+      const [pass,setPass]=useState("");
+      const [err,setErr]=useState("");
+      const [busy,setBusy]=useState(false);
+
+      async function submit() {
+        setErr(""); setBusy(true);
+        try {
+          if (!user.trim()||!pass.trim()) { setErr("Please fill in all fields."); return; }
+          if (mode==="register"&&!name.trim()) { setErr("Please enter your name."); return; }
+          const u=mode==="register"
+            ? await dbRegister(user.trim(),name.trim(),pass)
+            : await dbLogin(user.trim(),pass);
+          saveSession(u);
+          onLogin(u);
+        } catch(e) { setErr(e.message); }
+        finally { setBusy(false); }
+      }
+
+      return (
+        <div className="auth-wrap">
+          <div className="auth-card fade">
+            <div className="auth-logo">KKB</div>
+            <div className="auth-logo-sub">Bill Splitter</div>
+            <div className="auth-sub">SC/PWD discounts · Split fairly</div>
+            <div className="seg" style={{marginBottom:18}}>
+              <div className={`seg-o ${mode==="login"?"on":""}`} onClick={()=>{setMode("login");setErr("");}}>Sign In</div>
+              <div className={`seg-o ${mode==="register"?"on":""}`} onClick={()=>{setMode("register");setErr("");}}>Create Account</div>
+            </div>
+            {err&&<div className="err">⚠️ {err}</div>}
+            {mode==="register"&&(
+              <div className="field" style={{marginBottom:11}}>
+                <label className="lbl">Your Name</label>
+                <input className="inp" placeholder="e.g. Maria" value={name} onChange={e=>setName(e.target.value)} disabled={busy}/>
+              </div>
+            )}
+            <div className="field" style={{marginBottom:11}}>
+              <label className="lbl">Username</label>
+              <input className="inp" placeholder="e.g. maria123" value={user} onChange={e=>setUser(e.target.value)} disabled={busy}/>
+            </div>
+            <div className="field" style={{marginBottom:18}}>
+              <label className="lbl">Password</label>
+              <input className="inp" type="password" placeholder="••••••••" value={pass}
+                onChange={e=>setPass(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} disabled={busy}/>
+            </div>
+            <button className="btn btn-p btn-full" onClick={submit} disabled={busy}>
+              {busy?<><div className="spin"></div> Please wait…</>:mode==="login"?"Sign In →":"Create Account →"}
+            </button>
+            <div style={{textAlign:"center",marginTop:14,fontSize:12,color:"var(--muted)"}}>
+              {mode==="login"?"No account? ":"Already have one? "}
+              <span style={{color:"var(--accent)",cursor:"pointer",fontWeight:700}}
+                onClick={()=>{setMode(m=>m==="login"?"register":"login");setErr("");}}>
+                {mode==="login"?"Create one":"Sign in"}
+              </span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ── Share Modal ───────────────────────────────────────────────────────────
+    function ShareModal({pd,restaurant,onClose}) {
+      const amt=fmt(pd.grand),name=pd.person.name;
+      const text=encodeURIComponent(`Hi ${name}! Your share at ${restaurant||"our meal"} is ${amt}.${pd.person.isSC?" (SC/PWD discount applied)":""} 🧾`);
+      const [copied,setCopied]=useState(false);
+      function copy(){navigator.clipboard?.writeText(`${name}'s share at ${restaurant||"our meal"}: ${amt}`);setCopied(true);setTimeout(()=>setCopied(false),1500);}
+      const apps=[
+        {label:"📱 SMS / iMessage",href:`sms:?&body=${text}`,bg:"#2d7a4a"},
+        {label:"💬 Viber",href:`viber://forward?text=${text}`,bg:"#7b519d"},
+        {label:"💚 WhatsApp",href:`https://wa.me/?text=${text}`,bg:"#25d366"},
+        {label:"✈️ Telegram",href:`https://t.me/share/url?url=&text=${text}`,bg:"#229ed9"},
+        {label:"💙 Open GCash",href:"https://gcash.com/pay",bg:"#005cff",blank:true},
+      ];
+      return (
+        <div className="modal-bg" onClick={onClose}>
+          <div className="modal fade" onClick={e=>e.stopPropagation()}>
+            <div className="modal-title">Send to {name}</div>
+            <div className="modal-sub">Their total: <strong style={{color:"var(--accent)",fontFamily:"'JetBrains Mono',monospace"}}>{amt}</strong></div>
+            <div style={{display:"grid",gap:9}}>
+              {apps.map(app=>(
+                <a key={app.label} href={app.href} target={app.blank?"_blank":undefined} rel="noopener">
+                  <button className="btn btn-full" style={{background:app.bg,color:"#fff",fontSize:14}}>{app.label}</button>
+                </a>
+              ))}
+              <button className="btn btn-o btn-full" onClick={copy} style={{fontSize:14}}>{copied?"✓ Copied!":"📋 Copy Amount"}</button>
+            </div>
+            <button className="btn btn-g" style={{width:"100%",justifyContent:"center",marginTop:12}} onClick={onClose}>Close</button>
+          </div>
+        </div>
+      );
+    }
+
+    // ── Bill Detail Modal ─────────────────────────────────────────────────────
+    function BillDetailModal({bill,onClose}) {
+      const [shareTarget,setShareTarget]=useState(null);
+      if (!bill) return null;
+      const makePd=p=>({person:{name:p.name,isSC:p.isSC},grand:p.grand});
+      return (
+        <div className="modal-bg" onClick={onClose}>
+          {shareTarget&&<ShareModal pd={shareTarget} restaurant={bill.restaurant} onClose={()=>setShareTarget(null)}/>}
+          <div className="modal fade" onClick={e=>e.stopPropagation()}>
+            <div style={{textAlign:"center",marginBottom:16}}>
+              <div style={{fontSize:36,marginBottom:6}}>🍽️</div>
+              <div className="modal-title">{bill.restaurant||"Unnamed Restaurant"}</div>
+              <div style={{color:"var(--muted)",fontSize:12,marginTop:2}}>{bill.date}</div>
+            </div>
+            <hr className="div"/>
+            {bill.persons?.map((p,i)=>(
+              <div key={i} style={{marginBottom:14}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
+                  <div style={{display:"flex",alignItems:"center",gap:7}}>
+                    <div className="av" style={{background:avatarBg(i),color:avatarFg(i),width:26,height:26,fontSize:12}}>{ini(p.name)}</div>
+                    <span style={{fontWeight:700}}>{p.name}</span>
+                    {p.isSC&&<span className="badge badge-sc">SC/PWD</span>}
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <span className="mono" style={{color:"var(--accent)",fontWeight:700}}>{fmt(p.grand)}</span>
+                    <button className="btn btn-p btn-sm" onClick={e=>{e.stopPropagation();setShareTarget(makePd(p));}}>📤</button>
+                  </div>
+                </div>
+                {p.bd?.map((b,bi)=>(
+                  <div key={bi} style={{display:"flex",justifyContent:"space-between",fontSize:12,color:"var(--muted)",paddingLeft:33}}>
+                    <span>{b.name}</span><span className="mono">{fmt(b.disc)}</span>
+                  </div>
+                ))}
+                {p.discount>0&&<div style={{fontSize:12,color:"var(--green)",paddingLeft:33}}>SC/PWD discount: − {fmt(p.discount)}</div>}
+              </div>
+            ))}
+            <hr className="div"/>
+            <div style={{display:"flex",justifyContent:"space-between",fontFamily:"'Fraunces',serif",fontSize:19}}>
+              <span>Total</span><span style={{color:"var(--accent)"}}>{fmt(bill.grand)}</span>
+            </div>
+            {bill.totalDiscount>0&&(
+              <div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:"var(--green)",marginTop:4}}>
+                <span>SC/PWD Savings</span><span>− {fmt(bill.totalDiscount)}</span>
+              </div>
+            )}
+            <button className="btn btn-o btn-full" style={{marginTop:18}} onClick={onClose}>Close</button>
+          </div>
+        </div>
+      );
+    }
+
+    // ── History Tab ───────────────────────────────────────────────────────────
+    function HistoryTab({bills,onSelect,onDelete}) {
+      const [confirmId,setConfirmId]=useState(null);
+      if (!bills?.length) return (
+        <div className="empty fade">
+          <div className="empty-ico">🗒️</div>
+          <div className="empty-ttl">No receipts yet</div>
+          <div style={{fontSize:13}}>Split a bill and save it — it'll appear here.</div>
+        </div>
+      );
+      return (
+        <div className="fade">
+          <div style={{fontSize:13,color:"var(--muted)",marginBottom:14}}>{bills.length} receipt{bills.length!==1?"s":""} saved</div>
+          {[...bills].reverse().map(bill=>(
+            <div key={bill.id} className="receipt" onClick={()=>onSelect(bill)}>
+              <div className="rct-top" style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:10}}>
+                <div>
+                  <div className="rct-rest">{bill.restaurant||"Unnamed Restaurant"}</div>
+                  <div className="rct-date">{bill.date}</div>
+                </div>
+                {confirmId===bill.id
+                  ? <div style={{display:"flex",gap:6,alignItems:"center",flexShrink:0}} onClick={e=>e.stopPropagation()}>
+                      <span style={{fontSize:12,color:"var(--red)",fontWeight:600}}>Delete?</span>
+                      <button className="btn btn-sm" style={{background:"var(--red)",color:"#fff",fontSize:12}} onClick={e=>{e.stopPropagation();onDelete(bill.id);setConfirmId(null);}}>Yes</button>
+                      <button className="btn btn-o btn-sm" style={{fontSize:12}} onClick={e=>{e.stopPropagation();setConfirmId(null);}}>No</button>
+                    </div>
+                  : <button className="btn btn-g btn-sm" style={{flexShrink:0,fontSize:16,padding:"4px 8px"}}
+                      onClick={e=>{e.stopPropagation();setConfirmId(bill.id);}}>🗑️</button>
+                }
+              </div>
+              <div className="rct-body">
+                <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+                  {bill.persons?.map((p,j)=>(
+                    <div key={j} style={{display:"flex",alignItems:"center",gap:5,background:"var(--bg)",border:"1.5px solid var(--border)",borderRadius:20,padding:"3px 9px",fontSize:12}}>
+                      <div className="av" style={{width:16,height:16,fontSize:9,background:avatarBg(j),color:avatarFg(j)}}>{ini(p.name)}</div>
+                      <span>{p.name}</span>
+                      <span className="mono" style={{color:"var(--accent)",fontSize:11}}>{fmt(p.grand)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="rct-foot">
+                <div style={{fontSize:12,color:"var(--muted)"}}>
+                  {bill.persons?.length} {bill.persons?.length===1?"person":"people"}
+                  {bill.totalDiscount>0&&<span style={{color:"var(--green)",marginLeft:8}}>✦ SC/PWD</span>}
+                </div>
+                <div className="rct-total">{fmt(bill.grand)}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // ── Splitter Tab ──────────────────────────────────────────────────────────
+    function SplitterTab({user,userData,onSave}) {
+      const [persons,setPersons]=useState([{id:uid(),name:user.name,isSC:false}]);
+      const [items,setItems]=useState([]);
+      const [nItem,setNItem]=useState({name:"",price:""});
+      const [nPerson,setNPerson]=useState("");
+      const [restaurant,setRestaurant]=useState("");
+      const [scMode,setScMode]=useState("percent");
+      const [scVal,setScVal]=useState(10);
+      const [scOnOriginal,setScOnOriginal]=useState(true);
+      const [tab,setTab]=useState("split");
+      const [shareTarget,setShareTarget]=useState(null);
+      const [showAC,setShowAC]=useState(false);
+      const [showRestAC,setShowRestAC]=useState(false);
+      const [saved,setSaved]=useState(false);
+      const [saving,setSaving]=useState(false);
+
+      const restaurants=userData?.restaurants||[];
+      const menuHist=userData?.menuHistory||{};
+      const restSuggestions=restaurant.length>0?restaurants.filter(r=>r.toLowerCase().includes(restaurant.toLowerCase())&&r!==restaurant):[];
+      const menuSuggestions=nItem.name.length>0
+        ?(restaurant&&menuHist[restaurant]?menuHist[restaurant]:Object.values(menuHist).flat())
+          .filter((m,i,a)=>a.indexOf(m)===i&&m.toLowerCase().includes(nItem.name.toLowerCase())).slice(0,6)
+        :[];
+
+      const ci=id=>persons.findIndex(p=>p.id===id);
+      function addPerson(){if(!nPerson.trim())return;setPersons(p=>[...p,{id:uid(),name:nPerson.trim(),isSC:false}]);setNPerson("");}
+      function rmPerson(id){setPersons(p=>p.filter(x=>x.id!==id));setItems(it=>it.map(i=>({...i,sharers:i.sharers.filter(s=>s!==id)})));}
+      function toggleSC(id){setPersons(p=>p.map(x=>x.id===id?{...x,isSC:!x.isSC}:x));}
+      function addItem(){const price=parseFloat(nItem.price);if(!nItem.name.trim()||isNaN(price)||price<=0)return;setItems(i=>[...i,{id:uid(),name:nItem.name.trim(),price,sharers:[],vatApplied:true}]);setNItem({name:"",price:""});setShowAC(false);}
+      function rmItem(id){setItems(i=>i.filter(x=>x.id!==id));}
+      function toggleSharer(iid,pid){setItems(its=>its.map(it=>it.id!==iid?it:{...it,sharers:it.sharers.includes(pid)?it.sharers.filter(s=>s!==pid):[...it.sharers,pid]}));}
+      function allSharers(iid){setItems(its=>its.map(it=>it.id!==iid?it:{...it,sharers:persons.map(p=>p.id)}));}
+      function toggleVAT(iid){setItems(its=>its.map(it=>it.id!==iid?it:{...it,vatApplied:!it.vatApplied}));}
+
+      async function saveBill(){
+        const s=summary;if(s.grand===0||saving)return;
+        setSaving(true);
+        const newMH={...menuHist};
+        if(restaurant){const ex=newMH[restaurant]||[];const ni=items.map(i=>i.name).filter(n=>!ex.includes(n));newMH[restaurant]=[...ex,...ni];}
+        const newR=restaurant&&!restaurants.includes(restaurant)?[...restaurants,restaurant]:restaurants;
+        const bill={id:uid(),date:today(),restaurant,grand:s.grand,totalDiscount:s.totalDiscount,
+          persons:s.persons.filter(p=>p.sub>0).map(p=>({name:p.person.name,isSC:p.person.isSC,grand:p.grand,discount:p.discount,bd:p.bd}))};
+        await onSave({...userData,restaurants:newR,menuHistory:newMH,bills:[...(userData?.bills||[]),bill]});
+        setSaving(false);setSaved(true);setTimeout(()=>setSaved(false),2500);
+      }
+
+      const summary=useMemo(()=>computeSummary(persons,items,scMode,scVal,scOnOriginal),[persons,items,scMode,scVal,scOnOriginal]);
+      const hasBill=summary.grand>0;
+
+      return (
+        <div className="fade">
+          {shareTarget&&<ShareModal pd={shareTarget} restaurant={restaurant} onClose={()=>setShareTarget(null)}/>}
+
+          <div className="card">
+            <div className="card-hd"><span className="card-title">🏪 Restaurant</span></div>
+            <div className="card-body">
+              <div className="field">
+                <label className="lbl">Where are you eating?</label>
+                <div className="ac-wrap">
+                  <input className="inp" placeholder="Type to search saved restaurants…" value={restaurant}
+                    onChange={e=>{setRestaurant(e.target.value);setShowRestAC(true);}}
+                    onFocus={()=>setShowRestAC(true)} onBlur={()=>setTimeout(()=>setShowRestAC(false),150)}/>
+                  {showRestAC&&restSuggestions.length>0&&(
+                    <div className="ac-list">
+                      {restSuggestions.map(r=><div key={r} className="ac-item" onClick={()=>{setRestaurant(r);setShowRestAC(false);}}>🏪 {r}</div>)}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="card-hd"><span className="card-title">⚙️ Service Charge</span></div>
+            <div className="card-body">
+              <div style={{display:"flex",gap:14,flexWrap:"wrap",alignItems:"flex-end"}}>
+                <div className="field">
+                  <label className="lbl">Type</label>
+                  <div className="seg" style={{width:190}}>
+                    {["percent","fixed","none"].map(m=>(
+                      <div key={m} className={`seg-o ${scMode===m?"on":""}`} onClick={()=>setScMode(m)}>
+                        {m==="percent"?"% Rate":m==="fixed"?"₱ Fixed":"None"}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {scMode!=="none"&&(
+                  <div className="field" style={{flex:1,minWidth:150}}>
+                    <label className="lbl">{scMode==="percent"?"Rate":"Amount"}</label>
+                    {scMode==="percent"
+                      ?<div style={{display:"flex",gap:10,alignItems:"center"}}>
+                          <input type="range" min={0} max={15} step={1} value={scVal} onChange={e=>setScVal(+e.target.value)}/>
+                          <span className="mono" style={{color:"var(--accent)",fontWeight:700,minWidth:30}}>{scVal}%</span>
+                        </div>
+                      :<input className="inp" type="number" min={0} placeholder="0.00" value={scVal} onChange={e=>setScVal(+e.target.value)} style={{maxWidth:130}}/>
+                    }
+                  </div>
+                )}
+              </div>
+              {scMode!=="none"&&(
+                <div style={{marginTop:14,paddingTop:14,borderTop:"1.5px dashed var(--border)"}}>
+                  <div className="lbl" style={{marginBottom:7}}>SC applied on…</div>
+                  <div className="seg">
+                    <div className={`seg-o ${scOnOriginal?"on":""}`} onClick={()=>setScOnOriginal(true)}>Original price <span style={{opacity:.7,fontWeight:400}}>(RA 9994 standard)</span></div>
+                    <div className={`seg-o ${!scOnOriginal?"on":""}`} onClick={()=>setScOnOriginal(false)}>After SC/PWD discount</div>
+                  </div>
+                  <div style={{fontSize:11,color:"var(--muted)",marginTop:6}}>
+                    {scOnOriginal?"⚖️ Standard: SC is computed on the original price before discounts, then added to the discounted total.":"💡 Some places compute SC after applying SC/PWD discounts — toggle if that's the case here."}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="card-hd"><span className="card-title">👥 Diners</span><span style={{fontSize:11,color:"var(--muted)"}}>Tap to toggle SC/PWD</span></div>
+            <div className="card-body">
+              {persons.map((p,i)=>(
+                <div key={p.id} className="prow">
+                  <div className="av" style={{background:avatarBg(i),color:avatarFg(i)}}>{ini(p.name)}</div>
+                  <span style={{flex:1,fontWeight:600}}>{p.name}</span>
+                  <div className={`pill ${p.isSC?"pill-sc on":"pill-reg"}`} onClick={()=>toggleSC(p.id)}>{p.isSC?"✦ SC/PWD":"Regular"}</div>
+                  {persons.length>1&&<button className="btn btn-g" onClick={()=>rmPerson(p.id)}>✕</button>}
+                </div>
+              ))}
+              <div className="irow" style={{marginTop:10}}>
+                <input className="inp" placeholder="Add diner name…" value={nPerson}
+                  onChange={e=>setNPerson(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addPerson()} style={{flex:1}}/>
+                <button className="btn btn-p btn-sm" onClick={addPerson}>+ Add</button>
+              </div>
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="card-hd"><span className="card-title">🍽️ Items</span><span style={{fontSize:11,color:"var(--muted)"}}>Assign sharers per item</span></div>
+            <div className="card-body">
+              {items.length===0&&<div style={{textAlign:"center",padding:"18px 0",color:"var(--muted)",fontSize:13}}>No items yet</div>}
+              {items.map(item=>{
+                const pp=item.sharers.length>0?item.price/item.sharers.length:null;
+                return (
+                  <div key={item.id} className="iblock">
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,marginBottom:8}}>
+                      <div>
+                        <span style={{fontWeight:700,fontSize:14}}>{item.name}</span>
+                        <span className="mono" style={{color:"var(--accent)",fontSize:13,marginLeft:8}}>{fmt(item.price)}</span>
+                        {pp&&<span style={{fontSize:11,color:"var(--muted)",marginLeft:6}}>{fmt(pp)}/ea</span>}
+                      </div>
+                      <button className="btn btn-g" style={{fontSize:16}} onClick={()=>rmItem(item.id)}>✕</button>
+                    </div>
+                    <div style={{marginBottom:7}}>
+                      <div className="lbl" style={{marginBottom:5}}>Shared by:</div>
+                      <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+                        {persons.map(p=>(
+                          <div key={p.id} className={`chip ${item.sharers.includes(p.id)?"on":""}`} onClick={()=>toggleSharer(item.id,p.id)}>
+                            {p.name}{p.isSC?" ✦":""}
+                          </div>
+                        ))}
+                        <div className="chip chip-dashed" onClick={()=>allSharers(item.id)} style={{color:"var(--muted)"}}>All</div>
+                      </div>
+                    </div>
+                    <label style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:"var(--muted)",cursor:"pointer"}}>
+                      <input type="checkbox" checked={item.vatApplied} onChange={()=>toggleVAT(item.id)}/> VAT included (12%)
+                    </label>
+                  </div>
+                );
+              })}
+              <div style={{marginTop:16,paddingTop:14,borderTop:"1.5px dashed var(--border)"}}>
+                <div className="irow">
+                  <div className="field" style={{flex:2}}>
+                    <label className="lbl">Item name</label>
+                    <div className="ac-wrap">
+                      <input className="inp" placeholder="e.g. Crispy Pata" value={nItem.name}
+                        onChange={e=>{setNItem(n=>({...n,name:e.target.value}));setShowAC(true);}}
+                        onFocus={()=>setShowAC(true)} onBlur={()=>setTimeout(()=>setShowAC(false),150)}
+                        onKeyDown={e=>e.key==="Enter"&&addItem()}/>
+                      {showAC&&menuSuggestions.length>0&&(
+                        <div className="ac-list">
+                          {menuSuggestions.map(s=><div key={s} className="ac-item" onClick={()=>{setNItem(n=>({...n,name:s}));setShowAC(false);}}>{s}</div>)}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="field" style={{flex:1}}>
+                    <label className="lbl">Price ₱</label>
+                    <input className="inp" type="number" placeholder="0.00" value={nItem.price}
+                      onChange={e=>setNItem(n=>({...n,price:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&addItem()}/>
+                  </div>
+                  <div style={{paddingTop:18}}><button className="btn btn-p" onClick={addItem}>+ Add</button></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {hasBill&&(
+            <div className="card fade">
+              <div className="card-hd">
+                <span className="card-title">🧾 Summary</span>
+                <div className="tabs">
+                  <button className={`tab ${tab==="split"?"on":""}`} onClick={()=>setTab("split")}>Split</button>
+                  <button className={`tab ${tab==="comp"?"on":""}`} onClick={()=>setTab("comp")}>Breakdown</button>
+                </div>
+              </div>
+              <div className="card-body">
+                {tab==="split"&&summary.persons.filter(p=>p.sub>0).map((pd,i)=>(
+                  <div key={pd.person.id} className={`scard ${pd.person.isSC?"sc":""}`}>
+                    <div className="sname">
+                      <div className="av" style={{width:28,height:28,fontSize:13,background:avatarBg(ci(pd.person.id)),color:avatarFg(ci(pd.person.id))}}>{ini(pd.person.name)}</div>
+                      {pd.person.name}
+                      {pd.person.isSC&&<span className="badge badge-sc">SC/PWD</span>}
+                    </div>
+                    <div className="sline"><span>Subtotal (original)</span><span className="mono">{fmt(pd.sub)}</span></div>
+                    {pd.discount>0&&<div className="sline disc"><span>SC/PWD Discount</span><span className="mono">− {fmt(pd.discount)}</span></div>}
+                    {pd.sc>0&&<div className="sline"><span>Service Charge</span><span className="mono">+ {fmt(pd.sc)}</span></div>}
+                    <div className="sline total"><span>Total to Pay</span><span className="mono" style={{color:"var(--accent)"}}>{fmt(pd.grand)}</span></div>
+                    <div className="share-row">
+                      <button className="btn btn-p btn-sm" onClick={()=>setShareTarget(pd)}>📤 Send to {pd.person.name}</button>
+                    </div>
+                  </div>
+                ))}
+                {tab==="comp"&&summary.persons.filter(p=>p.sub>0).map((pd,i)=>(
+                  <div key={pd.person.id} style={{marginBottom:16}}>
+                    <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:4,fontWeight:700}}>
+                      <div className="av" style={{width:22,height:22,fontSize:11,background:avatarBg(ci(pd.person.id)),color:avatarFg(ci(pd.person.id))}}>{ini(pd.person.name)}</div>
+                      {pd.person.name} {pd.person.isSC&&<span className="badge badge-sc">SC/PWD</span>}
+                    </div>
+                    <div className="cbox">
+                      {pd.bd.map((b,bi)=>(
+                        <div key={bi}>
+                          <span className="cs">"{b.name}": </span>{fmt(b.raw)}
+                          {b.isSC&&b.vat&&<> → <span className="cs">÷1.12</span> = {fmt(b.ve)} → <span className="cs">×0.80</span> = <span className="cr">{fmt(b.disc)}</span></>}
+                          {b.isSC&&!b.vat&&<> → <span className="cs">×0.80 (no VAT)</span> = <span className="cr">{fmt(b.disc)}</span></>}
+                          {!b.isSC&&<> = <span className="cr">{fmt(b.raw)}</span></>}
+                        </div>
+                      ))}
+                      <div style={{borderTop:"1px solid var(--border)",paddingTop:4,marginTop:4}}>
+                        After discount: {fmt(pd.disc_sub)}{pd.sc>0&&<> + SC {fmt(pd.sc)}</>} = <span className="cr">{fmt(pd.grand)}</span>
+                        {"\n"}SC basis: {pd.scOnOriginal?"original":"post-discount"} {fmt(pd.scBasis)} × {scMode==="percent"?scVal+"%":"fixed share"}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="tbar">
+            <div>
+              <div className="tbar-lbl">Grand Total</div>
+              <div className="tbar-amt">{fmt(summary.grand)}</div>
+            </div>
+            {summary.totalDiscount>0&&(
+              <div style={{textAlign:"center"}}>
+                <div className="tbar-lbl">SC/PWD Saved</div>
+                <div className="tbar-sub" style={{color:"#a0d8ff"}}>− {fmt(summary.totalDiscount)}</div>
+              </div>
+            )}
+            <div style={{textAlign:"right"}}>
+              <div className="tbar-lbl">Service Charge</div>
+              <div className="tbar-sub">{fmt(summary.totalSC)}</div>
+            </div>
+          </div>
+
+          {hasBill&&(
+            <button className="btn btn-grn btn-full" style={{borderRadius:12,marginBottom:8}} onClick={saveBill} disabled={saving}>
+              {saving?<><div className="spin"></div> Saving…</>:saved?"✓ Saved to Receipts!":"💾 Save Bill to Receipts"}
+            </button>
+          )}
+        </div>
+      );
+    }
+
+    // ── Root ──────────────────────────────────────────────────────────────────
+    function App() {
+      const [user,setUser]=useState(null);
+      const [nav,setNav]=useState("split");
+      const [selectedBill,setSelectedBill]=useState(null);
+      const [userData,setUserData]=useState(null);
+      const [booting,setBooting]=useState(true);
+
+      useEffect(()=>{
+        (async()=>{
+          const s=loadSession();
+          if (s) {
+            try { const d=await dbLoad(s.id); setUser(s); setUserData(d); }
+            catch { clearSession(); }
+          }
+          setBooting(false);
+        })();
+      },[]);
+
+      async function login(u) { const d=await dbLoad(u.id); setUser(u); setUserData(d); }
+      async function handleSave(data) { setUserData(data); await dbSave(user.id,data); }
+      async function handleDelete(billId) {
+        const newData={...userData,bills:(userData.bills||[]).filter(b=>b.id!==billId)};
+        setUserData(newData);
+        await dbSave(user.id,newData);
+      }
+      function logout() { clearSession(); setUser(null); setUserData(null); setNav("split"); }
+
+      if (booting) return <Loading/>;
+      if (!user) return <AuthScreen onLogin={login}/>;
+
+      const bills=userData?.bills||[];
+      return (
+        <div className="app">
+          {selectedBill&&<BillDetailModal bill={selectedBill} onClose={()=>setSelectedBill(null)}/>}
+          <div className="topbar">
+            <div className="logo">KKB<span>Bill Splitter</span></div>
+            <div className="user-chip" onClick={logout} title="Sign out">
+              <div className="av" style={{background:avatarBg(0),color:avatarFg(0)}}>{ini(user.name)}</div>
+              {user.name}
+              <span style={{color:"var(--muted)",fontWeight:400,fontSize:11}}>· Sign out</span>
+            </div>
+          </div>
+          <div className="page">
+            {nav==="split"&&<SplitterTab user={user} userData={userData} onSave={handleSave}/>}
+            {nav==="history"&&(
+              <div className="fade">
+                <div style={{fontFamily:"'Fraunces',serif",fontSize:24,marginBottom:4}}>Your Receipts</div>
+                <div style={{color:"var(--muted)",fontSize:13,marginBottom:18}}>Tap any receipt to see the full breakdown</div>
+                <HistoryTab bills={bills} onSelect={setSelectedBill} onDelete={handleDelete}/>
+              </div>
+            )}
+          </div>
+          <div className="bnav">
+            <button className={`bnav-item ${nav==="split"?"on":""}`} onClick={()=>setNav("split")}>
+              <div className="bni">🍽️</div><div>Split</div>
+            </button>
+            <button className={`bnav-item ${nav==="history"?"on":""}`} onClick={()=>setNav("history")}>
+              <div className="bni">🗒️</div><div>Receipts {bills.length>0?`(${bills.length})`:""}</div>
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+  </script>
+</body>
+</html>
