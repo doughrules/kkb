@@ -325,11 +325,24 @@
       function copy(){navigator.clipboard?.writeText(`${name}'s share at ${restaurant||"our meal"}: ${amt}`);setCopied(true);setTimeout(()=>setCopied(false),1500);}
       const apps=[
         {label:"📱 SMS / iMessage",href:`sms:?&body=${text}`,bg:"#2d7a4a"},
-        {label:"💬 Viber",href:`viber://forward?text=${text}`,bg:"#7b519d"},
-        {label:"💚 WhatsApp",href:`https://wa.me/?text=${text}`,bg:"#25d366"},
-        {label:"✈️ Telegram",href:`https://t.me/share/url?url=&text=${text}`,bg:"#229ed9"},
-        {label:"💙 Open GCash",href:"https://gcash.com/pay",bg:"#005cff",blank:true},
+        {label:"💬 Viber",href:`viber://chat?number=&text=${text}`,bg:"#7b519d"},
+        {label:"💚 WhatsApp",href:`https://api.whatsapp.com/send?text=${text}`,bg:"#25d366"},
+        {label:"✈️ Telegram",href:`https://t.me/share/url?url=%20&text=${text}`,bg:"#229ed9"},
+        {label:"💙 GCash",href:"gcash://",bg:"#005cff",blank:false},
       ];
+
+      function openGCash(e) {
+        e.preventDefault();
+        // Try to open the GCash app
+        window.location.href = "gcash://";
+        // After 1.5s, if still here, the app wasn't installed — send to store
+        setTimeout(() => {
+          const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+          window.location.href = isIOS
+            ? "https://apps.apple.com/ph/app/gcash/id520020791"
+            : "https://play.google.com/store/apps/details?id=com.globe.gcash.android";
+        }, 1500);
+      }
       return (
         <div className="modal-bg" onClick={onClose}>
           <div className="modal fade" onClick={e=>e.stopPropagation()}>
@@ -337,9 +350,11 @@
             <div className="modal-sub">Their total: <strong style={{color:"var(--accent)",fontFamily:"'JetBrains Mono',monospace"}}>{amt}</strong></div>
             <div style={{display:"grid",gap:9}}>
               {apps.map(app=>(
-                <a key={app.label} href={app.href} target={app.blank?"_blank":undefined} rel="noopener">
-                  <button className="btn btn-full" style={{background:app.bg,color:"#fff",fontSize:14}}>{app.label}</button>
-                </a>
+                app.label.includes("GCash")
+                  ? <button key={app.label} className="btn btn-full" style={{background:app.bg,color:"#fff",fontSize:14}} onClick={openGCash}>{app.label}</button>
+                  : <a key={app.label} href={app.href} target={app.blank?"_blank":undefined} rel="noopener">
+                      <button className="btn btn-full" style={{background:app.bg,color:"#fff",fontSize:14}}>{app.label}</button>
+                    </a>
               ))}
               <button className="btn btn-o btn-full" onClick={copy} style={{fontSize:14}}>{copied?"✓ Copied!":"📋 Copy Amount"}</button>
             </div>
@@ -504,15 +519,25 @@
       const summary=useMemo(()=>computeSummary(persons,items,scMode,scVal,scOnOriginal),[persons,items,scMode,scVal,scOnOriginal]);
       const hasBill=summary.grand>0;
 
+      // Color palette for person chips — distinct per index
+      const CHIP_COLORS=[
+        {bg:"#dbeafe",fg:"#1e40af",active:"#1e40af"},  // blue
+        {bg:"#fce7f3",fg:"#9d174d",active:"#db2777"},  // pink
+        {bg:"#d1fae5",fg:"#065f46",active:"#059669"},  // green
+        {bg:"#fef3c7",fg:"#92400e",active:"#d97706"},  // amber
+        {bg:"#ede9fe",fg:"#5b21b6",active:"#7c3aed"},  // purple
+        {bg:"#fee2e2",fg:"#991b1b",active:"#dc2626"},  // red
+        {bg:"#e0f2fe",fg:"#075985",active:"#0284c7"},  // sky
+      ];
+
       return (
         <div className="fade">
           {shareTarget&&<ShareModal pd={shareTarget} restaurant={restaurant} onClose={()=>setShareTarget(null)}/>}
 
           <div className="card">
-            <div className="card-hd"><span className="card-title">🏪 Restaurant</span></div>
+            <div className="card-hd"><span className="card-title">🍽️ Where Are You Eating?</span></div>
             <div className="card-body">
               <div className="field">
-                <label className="lbl">Where are you eating?</label>
                 <div className="ac-wrap">
                   <input className="inp" placeholder="Type to search saved restaurants…" value={restaurant}
                     onChange={e=>{setRestaurant(e.target.value);setShowRestAC(true);}}
@@ -522,6 +547,95 @@
                       {restSuggestions.map(r=><div key={r} className="ac-item" onClick={()=>{setRestaurant(r);setShowRestAC(false);}}>🏪 {r}</div>)}
                     </div>
                   )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="card-hd"><span className="card-title">👥 Diners</span><span style={{fontSize:11,color:"var(--muted)"}}>Tap to toggle SC/PWD</span></div>
+            <div className="card-body">
+              {persons.map((p,i)=>(
+                <div key={p.id} className="prow">
+                  <div className="av" style={{background:avatarBg(i),color:avatarFg(i)}}>{ini(p.name)}</div>
+                  <span style={{flex:1,fontWeight:600}}>{p.name}</span>
+                  <div className={`pill ${p.isSC?"pill-sc on":"pill-reg"}`} onClick={()=>toggleSC(p.id)}>{p.isSC?"✦ SC/PWD":"Regular"}</div>
+                  {persons.length>1&&<button className="btn btn-g" onClick={()=>rmPerson(p.id)}>✕</button>}
+                </div>
+              ))}
+              <div className="irow" style={{marginTop:10}}>
+                <input className="inp" placeholder="Add diner name…" value={nPerson}
+                  onChange={e=>setNPerson(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addPerson()} style={{flex:1}}/>
+                <button className="btn btn-p btn-sm" onClick={addPerson}>+ Add</button>
+              </div>
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="card-hd"><span className="card-title">🧾 Items</span><span style={{fontSize:11,color:"var(--muted)"}}>Assign sharers per item</span></div>
+            <div className="card-body">
+              {items.length===0&&<div style={{textAlign:"center",padding:"18px 0",color:"var(--muted)",fontSize:13}}>No items yet</div>}
+              {items.map(item=>{
+                const pp=item.sharers.length>0?item.price/item.sharers.length:null;
+                return (
+                  <div key={item.id} className="iblock">
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,marginBottom:8}}>
+                      <div>
+                        <span style={{fontWeight:700,fontSize:14}}>{item.name}</span>
+                        <span className="mono" style={{color:"var(--accent)",fontSize:13,marginLeft:8}}>{fmt(item.price)}</span>
+                        {pp&&<span style={{fontSize:11,color:"var(--muted)",marginLeft:6}}>{fmt(pp)}/ea</span>}
+                      </div>
+                      <button className="btn btn-g" style={{fontSize:16}} onClick={()=>rmItem(item.id)}>✕</button>
+                    </div>
+                    <div style={{marginBottom:7}}>
+                      <div className="lbl" style={{marginBottom:5}}>Shared by:</div>
+                      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                        {persons.map((p,pi)=>{
+                          const cc=CHIP_COLORS[pi%CHIP_COLORS.length];
+                          const on=item.sharers.includes(p.id);
+                          return (
+                            <div key={p.id}
+                              style={{padding:"5px 12px",borderRadius:20,fontSize:12,fontWeight:700,cursor:"pointer",
+                                border:`1.5px solid ${on?cc.active:cc.bg}`,
+                                background:on?cc.active:cc.bg,
+                                color:on?"#fff":cc.fg,
+                                transition:"all .15s"}}
+                              onClick={()=>toggleSharer(item.id,p.id)}>
+                              {p.name}{p.isSC?" ✦":""}
+                            </div>
+                          );
+                        })}
+                        <div className="chip chip-dashed" onClick={()=>allSharers(item.id)} style={{color:"var(--muted)"}}>All</div>
+                      </div>
+                    </div>
+                    <label style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:"var(--muted)",cursor:"pointer"}}>
+                      <input type="checkbox" checked={item.vatApplied} onChange={()=>toggleVAT(item.id)}/> VAT included (12%)
+                    </label>
+                  </div>
+                );
+              })}
+              <div style={{marginTop:16,paddingTop:14,borderTop:"1.5px dashed var(--border)"}}>
+                <div className="irow">
+                  <div className="field" style={{flex:2}}>
+                    <label className="lbl">Item name</label>
+                    <div className="ac-wrap">
+                      <input className="inp" placeholder="e.g. Crispy Pata" value={nItem.name}
+                        onChange={e=>{setNItem(n=>({...n,name:e.target.value}));setShowAC(true);}}
+                        onFocus={()=>setShowAC(true)} onBlur={()=>setTimeout(()=>setShowAC(false),150)}
+                        onKeyDown={e=>e.key==="Enter"&&addItem()}/>
+                      {showAC&&menuSuggestions.length>0&&(
+                        <div className="ac-list">
+                          {menuSuggestions.map(s=><div key={s} className="ac-item" onClick={()=>{setNItem(n=>({...n,name:s}));setShowAC(false);}}>{s}</div>)}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="field" style={{flex:1}}>
+                    <label className="lbl">Price ₱</label>
+                    <input className="inp" type="number" placeholder="0.00" value={nItem.price}
+                      onChange={e=>setNItem(n=>({...n,price:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&addItem()}/>
+                  </div>
+                  <div style={{paddingTop:18}}><button className="btn btn-p" onClick={addItem}>+ Add</button></div>
                 </div>
               </div>
             </div>
@@ -566,85 +680,6 @@
                   </div>
                 </div>
               )}
-            </div>
-          </div>
-
-          <div className="card">
-            <div className="card-hd"><span className="card-title">👥 Diners</span><span style={{fontSize:11,color:"var(--muted)"}}>Tap to toggle SC/PWD</span></div>
-            <div className="card-body">
-              {persons.map((p,i)=>(
-                <div key={p.id} className="prow">
-                  <div className="av" style={{background:avatarBg(i),color:avatarFg(i)}}>{ini(p.name)}</div>
-                  <span style={{flex:1,fontWeight:600}}>{p.name}</span>
-                  <div className={`pill ${p.isSC?"pill-sc on":"pill-reg"}`} onClick={()=>toggleSC(p.id)}>{p.isSC?"✦ SC/PWD":"Regular"}</div>
-                  {persons.length>1&&<button className="btn btn-g" onClick={()=>rmPerson(p.id)}>✕</button>}
-                </div>
-              ))}
-              <div className="irow" style={{marginTop:10}}>
-                <input className="inp" placeholder="Add diner name…" value={nPerson}
-                  onChange={e=>setNPerson(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addPerson()} style={{flex:1}}/>
-                <button className="btn btn-p btn-sm" onClick={addPerson}>+ Add</button>
-              </div>
-            </div>
-          </div>
-
-          <div className="card">
-            <div className="card-hd"><span className="card-title">🍽️ Items</span><span style={{fontSize:11,color:"var(--muted)"}}>Assign sharers per item</span></div>
-            <div className="card-body">
-              {items.length===0&&<div style={{textAlign:"center",padding:"18px 0",color:"var(--muted)",fontSize:13}}>No items yet</div>}
-              {items.map(item=>{
-                const pp=item.sharers.length>0?item.price/item.sharers.length:null;
-                return (
-                  <div key={item.id} className="iblock">
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,marginBottom:8}}>
-                      <div>
-                        <span style={{fontWeight:700,fontSize:14}}>{item.name}</span>
-                        <span className="mono" style={{color:"var(--accent)",fontSize:13,marginLeft:8}}>{fmt(item.price)}</span>
-                        {pp&&<span style={{fontSize:11,color:"var(--muted)",marginLeft:6}}>{fmt(pp)}/ea</span>}
-                      </div>
-                      <button className="btn btn-g" style={{fontSize:16}} onClick={()=>rmItem(item.id)}>✕</button>
-                    </div>
-                    <div style={{marginBottom:7}}>
-                      <div className="lbl" style={{marginBottom:5}}>Shared by:</div>
-                      <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
-                        {persons.map(p=>(
-                          <div key={p.id} className={`chip ${item.sharers.includes(p.id)?"on":""}`} onClick={()=>toggleSharer(item.id,p.id)}>
-                            {p.name}{p.isSC?" ✦":""}
-                          </div>
-                        ))}
-                        <div className="chip chip-dashed" onClick={()=>allSharers(item.id)} style={{color:"var(--muted)"}}>All</div>
-                      </div>
-                    </div>
-                    <label style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:"var(--muted)",cursor:"pointer"}}>
-                      <input type="checkbox" checked={item.vatApplied} onChange={()=>toggleVAT(item.id)}/> VAT included (12%)
-                    </label>
-                  </div>
-                );
-              })}
-              <div style={{marginTop:16,paddingTop:14,borderTop:"1.5px dashed var(--border)"}}>
-                <div className="irow">
-                  <div className="field" style={{flex:2}}>
-                    <label className="lbl">Item name</label>
-                    <div className="ac-wrap">
-                      <input className="inp" placeholder="e.g. Crispy Pata" value={nItem.name}
-                        onChange={e=>{setNItem(n=>({...n,name:e.target.value}));setShowAC(true);}}
-                        onFocus={()=>setShowAC(true)} onBlur={()=>setTimeout(()=>setShowAC(false),150)}
-                        onKeyDown={e=>e.key==="Enter"&&addItem()}/>
-                      {showAC&&menuSuggestions.length>0&&(
-                        <div className="ac-list">
-                          {menuSuggestions.map(s=><div key={s} className="ac-item" onClick={()=>{setNItem(n=>({...n,name:s}));setShowAC(false);}}>{s}</div>)}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="field" style={{flex:1}}>
-                    <label className="lbl">Price ₱</label>
-                    <input className="inp" type="number" placeholder="0.00" value={nItem.price}
-                      onChange={e=>setNItem(n=>({...n,price:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&addItem()}/>
-                  </div>
-                  <div style={{paddingTop:18}}><button className="btn btn-p" onClick={addItem}>+ Add</button></div>
-                </div>
-              </div>
             </div>
           </div>
 
