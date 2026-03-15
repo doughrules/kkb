@@ -150,9 +150,19 @@
 
     // ── helpers ───────────────────────────────────────────────────────────────
     function uid() { return Math.random().toString(36).slice(2,9); }
-    function fmt(n) { return "₱"+(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,","); }
+    function fmt(n, sym="₱") { return sym+(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,","); }
     function hashPw(s) { let h=0; for(let c of s){h=(h<<5)-h+c.charCodeAt(0)|0;} return String(h); }
     function today() { return new Date().toLocaleDateString("en-PH",{year:"numeric",month:"long",day:"numeric"}); }
+
+    const CURRENCIES=[
+      {code:"PHP",sym:"₱",label:"PHP — Philippine Peso"},
+      {code:"USD",sym:"$",label:"USD — US Dollar"},
+      {code:"HKD",sym:"HK$",label:"HKD — Hong Kong Dollar"},
+      {code:"SGD",sym:"S$",label:"SGD — Singapore Dollar"},
+      {code:"THB",sym:"฿",label:"THB — Thai Baht"},
+      {code:"EUR",sym:"€",label:"EUR — Euro"},
+      {code:"GBP",sym:"£",label:"GBP — British Pound"},
+    ];
     const COLORS=["#e05c2e","#2563eb","#16a34a","#c026d3","#7c3aed","#d97706","#0891b2"];
     const avatarBg=i=>COLORS[i%COLORS.length]+"22";
     const avatarFg=i=>COLORS[i%COLORS.length];
@@ -319,7 +329,8 @@
 
     // ── Share Modal ───────────────────────────────────────────────────────────
     function ShareModal({pd,restaurant,onClose}) {
-      const amt=fmt(pd.grand),name=pd.person.name;
+      const sym=pd.sym||"₱";
+      const amt=fmt(pd.grand,sym),name=pd.person.name;
       const text=encodeURIComponent(`Hi ${name}! Your share at ${restaurant||"our meal"} is ${amt}.${pd.person.isSC?" (SC/PWD discount applied)":""} 🧾`);
       const [copied,setCopied]=useState(false);
       function copy(){navigator.clipboard?.writeText(`${name}'s share at ${restaurant||"our meal"}: ${amt}`);setCopied(true);setTimeout(()=>setCopied(false),1500);}
@@ -368,7 +379,8 @@
     function BillDetailModal({bill,onClose}) {
       const [shareTarget,setShareTarget]=useState(null);
       if (!bill) return null;
-      const makePd=p=>({person:{name:p.name,isSC:p.isSC},grand:p.grand});
+      const sym=bill.sym||"₱";
+      const makePd=p=>({person:{name:p.name,isSC:p.isSC},grand:p.grand,sym});
       return (
         <div className="modal-bg" onClick={onClose}>
           {shareTarget&&<ShareModal pd={shareTarget} restaurant={bill.restaurant} onClose={()=>setShareTarget(null)}/>}
@@ -376,7 +388,7 @@
             <div style={{textAlign:"center",marginBottom:16}}>
               <div style={{fontSize:36,marginBottom:6}}>🍽️</div>
               <div className="modal-title">{bill.restaurant||"Unnamed Restaurant"}</div>
-              <div style={{color:"var(--muted)",fontSize:12,marginTop:2}}>{bill.date}</div>
+              <div style={{color:"var(--muted)",fontSize:12,marginTop:2}}>{bill.date}{bill.currency&&bill.currency!=="PHP"&&<span style={{marginLeft:8,background:"var(--accent-bg)",color:"var(--accent)",padding:"1px 7px",borderRadius:10,fontSize:11,fontWeight:700}}>{bill.currency}</span>}</div>
             </div>
             <hr className="div"/>
             {bill.persons?.map((p,i)=>(
@@ -388,25 +400,25 @@
                     {p.isSC&&<span className="badge badge-sc">SC/PWD</span>}
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:8}}>
-                    <span className="mono" style={{color:"var(--accent)",fontWeight:700}}>{fmt(p.grand)}</span>
+                    <span className="mono" style={{color:"var(--accent)",fontWeight:700}}>{fmt(p.grand,sym)}</span>
                     <button className="btn btn-p btn-sm" onClick={e=>{e.stopPropagation();setShareTarget(makePd(p));}}>📤</button>
                   </div>
                 </div>
                 {p.bd?.map((b,bi)=>(
                   <div key={bi} style={{display:"flex",justifyContent:"space-between",fontSize:12,color:"var(--muted)",paddingLeft:33}}>
-                    <span>{b.name}</span><span className="mono">{fmt(b.disc)}</span>
+                    <span>{b.name}</span><span className="mono">{fmt(b.disc,sym)}</span>
                   </div>
                 ))}
-                {p.discount>0&&<div style={{fontSize:12,color:"var(--green)",paddingLeft:33}}>SC/PWD discount: − {fmt(p.discount)}</div>}
+                {p.discount>0&&<div style={{fontSize:12,color:"var(--green)",paddingLeft:33}}>SC/PWD discount: − {fmt(p.discount,sym)}</div>}
               </div>
             ))}
             <hr className="div"/>
             <div style={{display:"flex",justifyContent:"space-between",fontFamily:"'Fraunces',serif",fontSize:19}}>
-              <span>Total</span><span style={{color:"var(--accent)"}}>{fmt(bill.grand)}</span>
+              <span>Total</span><span style={{color:"var(--accent)"}}>{fmt(bill.grand,sym)}</span>
             </div>
             {bill.totalDiscount>0&&(
               <div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:"var(--green)",marginTop:4}}>
-                <span>SC/PWD Savings</span><span>− {fmt(bill.totalDiscount)}</span>
+                <span>SC/PWD Savings</span><span>− {fmt(bill.totalDiscount,sym)}</span>
               </div>
             )}
             <button className="btn btn-o btn-full" style={{marginTop:18}} onClick={onClose}>Close</button>
@@ -451,7 +463,7 @@
                     <div key={j} style={{display:"flex",alignItems:"center",gap:5,background:"var(--bg)",border:"1.5px solid var(--border)",borderRadius:20,padding:"3px 9px",fontSize:12}}>
                       <div className="av" style={{width:16,height:16,fontSize:9,background:avatarBg(j),color:avatarFg(j)}}>{ini(p.name)}</div>
                       <span>{p.name}</span>
-                      <span className="mono" style={{color:"var(--accent)",fontSize:11}}>{fmt(p.grand)}</span>
+                      <span className="mono" style={{color:"var(--accent)",fontSize:11}}>{fmt(p.grand,bill.sym||"₱")}</span>
                     </div>
                   ))}
                 </div>
@@ -460,8 +472,9 @@
                 <div style={{fontSize:12,color:"var(--muted)"}}>
                   {bill.persons?.length} {bill.persons?.length===1?"person":"people"}
                   {bill.totalDiscount>0&&<span style={{color:"var(--green)",marginLeft:8}}>✦ SC/PWD</span>}
+                  {bill.currency&&bill.currency!=="PHP"&&<span style={{marginLeft:8,fontWeight:700,color:"var(--accent)"}}>{bill.currency}</span>}
                 </div>
-                <div className="rct-total">{fmt(bill.grand)}</div>
+                <div className="rct-total">{fmt(bill.grand,bill.sym||"₱")}</div>
               </div>
             </div>
           ))}
@@ -485,6 +498,7 @@
       const [showRestAC,setShowRestAC]=useState(false);
       const [saved,setSaved]=useState(false);
       const [saving,setSaving]=useState(false);
+      const [currency,setCurrency]=useState("PHP");
 
       const restaurants=userData?.restaurants||[];
       const menuHist=userData?.menuHistory||{};
@@ -510,7 +524,7 @@
         const newMH={...menuHist};
         if(restaurant){const ex=newMH[restaurant]||[];const ni=items.map(i=>i.name).filter(n=>!ex.includes(n));newMH[restaurant]=[...ex,...ni];}
         const newR=restaurant&&!restaurants.includes(restaurant)?[...restaurants,restaurant]:restaurants;
-        const bill={id:uid(),date:today(),restaurant,grand:s.grand,totalDiscount:s.totalDiscount,
+        const bill={id:uid(),date:today(),restaurant,grand:s.grand,totalDiscount:s.totalDiscount,currency,sym,
           persons:s.persons.filter(p=>p.sub>0).map(p=>({name:p.person.name,isSC:p.person.isSC,grand:p.grand,discount:p.discount,bd:p.bd}))};
         await onSave({...userData,restaurants:newR,menuHistory:newMH,bills:[...(userData?.bills||[]),bill]});
         setSaving(false);setSaved(true);setTimeout(()=>setSaved(false),2500);
@@ -518,6 +532,7 @@
 
       const summary=useMemo(()=>computeSummary(persons,items,scMode,scVal,scOnOriginal),[persons,items,scMode,scVal,scOnOriginal]);
       const hasBill=summary.grand>0;
+      const sym=CURRENCIES.find(c=>c.code===currency)?.sym||"₱";
 
       // Color palette for person chips — distinct per index
       const CHIP_COLORS=[
@@ -537,7 +552,7 @@
           <div className="card">
             <div className="card-hd"><span className="card-title">🍽️ Where Are You Eating?</span></div>
             <div className="card-body">
-              <div className="field">
+              <div className="field" style={{marginBottom:14}}>
                 <div className="ac-wrap">
                   <input className="inp" placeholder="Type to search saved restaurants…" value={restaurant}
                     onChange={e=>{setRestaurant(e.target.value);setShowRestAC(true);}}
@@ -547,6 +562,24 @@
                       {restSuggestions.map(r=><div key={r} className="ac-item" onClick={()=>{setRestaurant(r);setShowRestAC(false);}}>🏪 {r}</div>)}
                     </div>
                   )}
+                </div>
+              </div>
+              <div className="field">
+                <label className="lbl">Currency</label>
+                <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
+                  {CURRENCIES.map(c=>(
+                    <div key={c.code}
+                      onClick={()=>setCurrency(c.code)}
+                      style={{
+                        padding:"6px 13px",borderRadius:20,fontSize:13,fontWeight:700,cursor:"pointer",
+                        border:`1.5px solid ${currency===c.code?"var(--accent)":"var(--border2)"}`,
+                        background:currency===c.code?"var(--accent)":"var(--bg)",
+                        color:currency===c.code?"#fff":"var(--ink2)",
+                        transition:"all .15s",fontFamily:"'JetBrains Mono',monospace"
+                      }}>
+                      {c.sym} {c.code}
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -582,8 +615,8 @@
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,marginBottom:8}}>
                       <div>
                         <span style={{fontWeight:700,fontSize:14}}>{item.name}</span>
-                        <span className="mono" style={{color:"var(--accent)",fontSize:13,marginLeft:8}}>{fmt(item.price)}</span>
-                        {pp&&<span style={{fontSize:11,color:"var(--muted)",marginLeft:6}}>{fmt(pp)}/ea</span>}
+                        <span className="mono" style={{color:"var(--accent)",fontSize:13,marginLeft:8}}>{fmt(item.price,sym)}</span>
+                        {pp&&<span style={{fontSize:11,color:"var(--muted)",marginLeft:6}}>{fmt(pp,sym)}/ea</span>}
                       </div>
                       <button className="btn btn-g" style={{fontSize:16}} onClick={()=>rmItem(item.id)}>✕</button>
                     </div>
@@ -631,7 +664,7 @@
                     </div>
                   </div>
                   <div className="field" style={{flex:1}}>
-                    <label className="lbl">Price ₱</label>
+                    <label className="lbl">Price {sym}</label>
                     <input className="inp" type="number" placeholder="0.00" value={nItem.price}
                       onChange={e=>setNItem(n=>({...n,price:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&addItem()}/>
                   </div>
@@ -700,12 +733,12 @@
                       {pd.person.name}
                       {pd.person.isSC&&<span className="badge badge-sc">SC/PWD</span>}
                     </div>
-                    <div className="sline"><span>Subtotal (original)</span><span className="mono">{fmt(pd.sub)}</span></div>
-                    {pd.discount>0&&<div className="sline disc"><span>SC/PWD Discount</span><span className="mono">− {fmt(pd.discount)}</span></div>}
-                    {pd.sc>0&&<div className="sline"><span>Service Charge</span><span className="mono">+ {fmt(pd.sc)}</span></div>}
-                    <div className="sline total"><span>Total to Pay</span><span className="mono" style={{color:"var(--accent)"}}>{fmt(pd.grand)}</span></div>
+                    <div className="sline"><span>Subtotal (original)</span><span className="mono">{fmt(pd.sub,sym)}</span></div>
+                    {pd.discount>0&&<div className="sline disc"><span>SC/PWD Discount</span><span className="mono">− {fmt(pd.discount,sym)}</span></div>}
+                    {pd.sc>0&&<div className="sline"><span>Service Charge</span><span className="mono">+ {fmt(pd.sc,sym)}</span></div>}
+                    <div className="sline total"><span>Total to Pay</span><span className="mono" style={{color:"var(--accent)"}}>{fmt(pd.grand,sym)}</span></div>
                     <div className="share-row">
-                      <button className="btn btn-p btn-sm" onClick={()=>setShareTarget(pd)}>📤 Send to {pd.person.name}</button>
+                      <button className="btn btn-p btn-sm" onClick={()=>setShareTarget({...pd,sym})}>📤 Send to {pd.person.name}</button>
                     </div>
                   </div>
                 ))}
@@ -718,15 +751,15 @@
                     <div className="cbox">
                       {pd.bd.map((b,bi)=>(
                         <div key={bi}>
-                          <span className="cs">"{b.name}": </span>{fmt(b.raw)}
-                          {b.isSC&&b.vat&&<> → <span className="cs">÷1.12</span> = {fmt(b.ve)} → <span className="cs">×0.80</span> = <span className="cr">{fmt(b.disc)}</span></>}
-                          {b.isSC&&!b.vat&&<> → <span className="cs">×0.80 (no VAT)</span> = <span className="cr">{fmt(b.disc)}</span></>}
-                          {!b.isSC&&<> = <span className="cr">{fmt(b.raw)}</span></>}
+                          <span className="cs">"{b.name}": </span>{fmt(b.raw,sym)}
+                          {b.isSC&&b.vat&&<> → <span className="cs">÷1.12</span> = {fmt(b.ve,sym)} → <span className="cs">×0.80</span> = <span className="cr">{fmt(b.disc,sym)}</span></>}
+                          {b.isSC&&!b.vat&&<> → <span className="cs">×0.80 (no VAT)</span> = <span className="cr">{fmt(b.disc,sym)}</span></>}
+                          {!b.isSC&&<> = <span className="cr">{fmt(b.raw,sym)}</span></>}
                         </div>
                       ))}
                       <div style={{borderTop:"1px solid var(--border)",paddingTop:4,marginTop:4}}>
-                        After discount: {fmt(pd.disc_sub)}{pd.sc>0&&<> + SC {fmt(pd.sc)}</>} = <span className="cr">{fmt(pd.grand)}</span>
-                        {"\n"}SC basis: {pd.scOnOriginal?"original":"post-discount"} {fmt(pd.scBasis)} × {scMode==="percent"?scVal+"%":"fixed share"}
+                        After discount: {fmt(pd.disc_sub,sym)}{pd.sc>0&&<> + SC {fmt(pd.sc,sym)}</>} = <span className="cr">{fmt(pd.grand,sym)}</span>
+                        {"\n"}SC basis: {pd.scOnOriginal?"original":"post-discount"} {fmt(pd.scBasis,sym)} × {scMode==="percent"?scVal+"%":"fixed share"}
                       </div>
                     </div>
                   </div>
@@ -738,17 +771,17 @@
           <div className="tbar">
             <div>
               <div className="tbar-lbl">Grand Total</div>
-              <div className="tbar-amt">{fmt(summary.grand)}</div>
+              <div className="tbar-amt">{fmt(summary.grand,sym)}</div>
             </div>
             {summary.totalDiscount>0&&(
               <div style={{textAlign:"center"}}>
                 <div className="tbar-lbl">SC/PWD Saved</div>
-                <div className="tbar-sub" style={{color:"#a0d8ff"}}>− {fmt(summary.totalDiscount)}</div>
+                <div className="tbar-sub" style={{color:"#a0d8ff"}}>− {fmt(summary.totalDiscount,sym)}</div>
               </div>
             )}
             <div style={{textAlign:"right"}}>
               <div className="tbar-lbl">Service Charge</div>
-              <div className="tbar-sub">{fmt(summary.totalSC)}</div>
+              <div className="tbar-sub">{fmt(summary.totalSC,sym)}</div>
             </div>
           </div>
 
